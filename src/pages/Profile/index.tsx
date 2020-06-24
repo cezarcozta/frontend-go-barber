@@ -135,7 +135,7 @@ const Profile: React.FC = () => {
   return (
     <Container>
       <header>
-        <div>
+        <div data-testid="backLink">
           <Link to="/dashboard">
             <FiArrowLeft />
           </Link>

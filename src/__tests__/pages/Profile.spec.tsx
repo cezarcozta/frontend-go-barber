@@ -1,10 +1,16 @@
 import React from 'react';
 import { render, fireEvent, wait } from '@testing-library/react';
-import SignIn from '../../pages/SignIn';
+import MockAdapter from 'axios-mock-adapter';
+import Profile from '../../pages/Profile';
+import api from '../../services/api';
+import { useAuth } from '../../hooks/auth';
 
 const mockedHistoryPush = jest.fn();
 const mockedSignIn = jest.fn();
 const mockedAddToast = jest.fn();
+const mockedUpdateUser = jest.fn();
+
+const apiMock = new MockAdapter(api);
 
 jest.mock('react-router-dom', () => {
   return {
@@ -19,6 +25,11 @@ jest.mock('../../hooks/auth', () => {
   return {
     useAuth: () => ({
       signIn: mockedSignIn,
+      user: {
+        name: 'John Doe',
+        email: 'johndoe@exemple.com',
+      },
+      updateUser: mockedUpdateUser,
     }),
   };
 });
@@ -31,67 +42,137 @@ jest.mock('../../hooks/toast', () => {
   };
 });
 
-describe('SignIn Page', () => {
+describe('Profile Page', () => {
   beforeEach(() => {
     mockedHistoryPush.mockClear();
+    mockedUpdateUser.mockClear();
+    mockedAddToast.mockClear();
   });
 
-  it('should be able to sign in', async () => {
-    const { getByPlaceholderText, getByText } = render(<SignIn />);
+  it('should be able to change profile', async () => {
+    const apiResponse = {
+      user: {
+        name: 'John Doe',
+        email: 'johndoe@exemple.com',
+        old_password: 'testpassword',
+        password: 'newpassword',
+        password_confimartion: 'newpassword',
+      },
+    };
 
-    const emailField = getByPlaceholderText('E-mail');
-    const passwordField = getByPlaceholderText('Senha');
-    const buttomElement = getByText('Entrar');
+    apiMock.onPut('/profile').reply(200, apiResponse);
 
-    fireEvent.change(emailField, { target: { value: 'johndoe@exemple.com' } });
+    const { getByPlaceholderText, getByText } = render(<Profile />);
+
+    const oldPasswordField = getByPlaceholderText('Senha atual');
+    const passwordField = getByPlaceholderText('Nova senha');
+    const password_confirmationField = getByPlaceholderText('Confirmar senha');
+    const buttomElement = getByText('Alterar Perfil');
+
+    fireEvent.change(oldPasswordField, {
+      target: { value: 'old-password' },
+    });
+
     fireEvent.change(passwordField, { target: { value: '123456' } });
+
+    fireEvent.change(password_confirmationField, {
+      target: { value: '123456' },
+    });
 
     fireEvent.click(buttomElement);
 
     await wait(() => {
-      expect(mockedHistoryPush).toHaveBeenCalledWith('/Dashboard');
+      expect(apiResponse.user.password_confimartion).toBeTruthy();
+      expect(mockedUpdateUser).toHaveBeenCalledWith(apiResponse);
+      expect(mockedAddToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'success',
+        }),
+      );
     });
   });
 
-  it('should not be able to sign in with invalid credential', async () => {
-    const { getByPlaceholderText, getByText } = render(<SignIn />);
-
-    const emailField = getByPlaceholderText('E-mail');
-    const passwordField = getByPlaceholderText('Senha');
-    const buttomElement = getByText('Entrar');
-
-    fireEvent.change(emailField, { target: { value: 'not-valid-email' } });
-    fireEvent.change(passwordField, { target: { value: '123456' } });
-
-    fireEvent.click(buttomElement);
-
-    await wait(() => {
-      expect(mockedHistoryPush).not.toHaveBeenCalled();
-    });
-  });
-
-  it('should display an error if login fails', async () => {
-    mockedSignIn.mockImplementation(() => {
+  it('should not be able to change profile I DONT KNOW WHY', async () => {
+    mockedUpdateUser.mockImplementation(() => {
       throw new Error();
     });
 
-    const { getByPlaceholderText, getByText } = render(<SignIn />);
+    apiMock.onPost('/profile').reply(401);
 
-    const emailField = getByPlaceholderText('E-mail');
-    const passwordField = getByPlaceholderText('Senha');
-    const buttomElement = getByText('Entrar');
+    const { getByPlaceholderText, getByText } = render(<Profile />);
 
-    fireEvent.change(emailField, { target: { value: 'johndoe@exemple.com' } });
+    const oldPasswordField = getByPlaceholderText('Senha atual');
+    const passwordField = getByPlaceholderText('Nova senha');
+    const password_confirmationField = getByPlaceholderText('Confirmar senha');
+    const buttomElement = getByText('Alterar Perfil');
+
+    fireEvent.change(oldPasswordField, {
+      target: { value: 'old-password' },
+    });
+
     fireEvent.change(passwordField, { target: { value: '123456' } });
+
+    fireEvent.change(password_confirmationField, {
+      target: { value: '123456' },
+    });
 
     fireEvent.click(buttomElement);
 
     await wait(() => {
+      expect(mockedHistoryPush).not.toHaveBeenCalledWith('/dashboard');
       expect(mockedAddToast).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'error',
         }),
       );
+    });
+  });
+
+  it('should not be able to change profile with invalids credentials', async () => {
+    mockedUpdateUser.mockImplementation(() => {
+      throw new Error();
+    });
+
+    apiMock.onPost('/profile').reply(401);
+
+    const { getByPlaceholderText, getByText } = render(<Profile />);
+
+    const oldPasswordField = getByPlaceholderText('Senha atual');
+    const passwordField = getByPlaceholderText('Nova senha');
+    const password_confirmationField = getByPlaceholderText('Confirmar senha');
+    const buttomElement = getByText('Alterar Perfil');
+
+    fireEvent.change(oldPasswordField, {
+      target: { value: 'old-password' },
+    });
+
+    fireEvent.change(passwordField, { target: { value: '123456' } });
+
+    fireEvent.change(password_confirmationField, {
+      target: { value: 'not-the-same' },
+    });
+
+    fireEvent.click(buttomElement);
+
+    await wait(() => {
+      expect(mockedHistoryPush).not.toHaveBeenCalledWith('/dashboard');
+      expect(mockedAddToast).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+        }),
+      );
+    });
+  });
+
+  it('should be able to go back to dashboard', async () => {
+    const { getByTestId } = render(<Profile />);
+
+    const LinkElement = getByTestId('backLink');
+
+    fireEvent.click(LinkElement);
+
+    await wait(() => {
+      expect(fireEvent.click(LinkElement)).toBeTruthy();
     });
   });
 });

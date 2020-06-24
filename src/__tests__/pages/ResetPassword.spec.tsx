@@ -84,7 +84,9 @@ describe('ResetPassword Page', () => {
       password_confirmation: '123123',
       token: 'no-token',
     };
+
     apiMock.onPost('password/reset').reply(401, apiResponse);
+
     const { getByPlaceholderText, getByText } = render(<ResetPassword />);
 
     const newPasswordField = getByPlaceholderText('Nova Senha');
