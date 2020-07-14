@@ -5,10 +5,10 @@ import Dashboard from '../../pages/Dashboard';
 import api from '../../services/api';
 
 const mockedHistoryPush = jest.fn();
-const mockedLocationSearch = jest.fn();
-const mockedFormat = jest.fn();
-const mockedSelectedDate = jest.fn();
-const mockedCallback = jest.fn();
+// const mockedLocationSearch = jest.fn();
+// const mockedFormat = jest.fn();
+// const mockedSelectedDate = jest.fn();
+// const mockedCallback = jest.fn();
 
 const apiMock = new MockAdapter(api);
 
@@ -26,26 +26,9 @@ jest.mock('date-fns/esm', () => {
 
 jest.mock('date-fns', () => {
   return {
-    foramt: () => ({}),
+    format: () => ({}),
     isToday: () => ({}),
     isAfter: () => ({}),
-  };
-});
-
-jest.mock('react', () => {
-  return {
-    useEffect: () => ({
-      selectDate: mockedSelectedDate,
-    }),
-    useState: () => ({
-      state: mockedSelectedDate,
-    }),
-    useCallback: () => ({
-      callback: mockedSelectedDate,
-    }),
-    useMemo: () => ({
-      format: mockedSelectedDate,
-    }),
   };
 });
 
@@ -59,8 +42,8 @@ jest.mock('react-router-dom', () => {
 });
 
 describe('Dashboard Page', () => {
-  it('should be', () => {
-    apiMock.onGet();
+  it('should not be', () => {
+    apiMock.onGet().reply(401);
     render(<Dashboard />);
   });
 });

@@ -55,7 +55,7 @@ describe('ResetPassword Page', () => {
       token: 'token-123',
     };
 
-    apiMock.onPost('password/reset').reply(200, apiResponse);
+    apiMock.onPost('password/reset', { apiResponse }).reply(200, apiResponse);
 
     const { getByPlaceholderText, getByText } = render(<ResetPassword />);
 

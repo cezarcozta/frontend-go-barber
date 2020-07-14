@@ -8,6 +8,7 @@ export interface ToastMessage {
   title: string;
   description?: string;
 }
+
 interface ToastData {
   addToast(message: Omit<ToastMessage, 'id'>): void;
   removeToast(id: string): void;
@@ -28,6 +29,7 @@ const ToastProvider: React.FC = ({ children }) => {
         title,
         description,
       };
+
       setMessages((oldMessages) => [...oldMessages, toast]);
     },
     [],

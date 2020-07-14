@@ -8,6 +8,8 @@ const mockedHistoryPush = jest.fn();
 const mockedSignIn = jest.fn();
 const mockedAddToast = jest.fn();
 const mockedUpdateUser = jest.fn();
+const mockedCallback = jest.fn();
+const mockedFormData = jest.fn();
 
 const apiMock = new MockAdapter(api);
 
@@ -46,6 +48,8 @@ describe('Profile Page', () => {
     mockedHistoryPush.mockClear();
     mockedUpdateUser.mockClear();
     mockedAddToast.mockClear();
+    mockedCallback.mockClear();
+    mockedFormData.mockClear();
   });
 
   it('should be able to change profile', async () => {
@@ -172,6 +176,37 @@ describe('Profile Page', () => {
 
     await wait(() => {
       expect(fireEvent.click(LinkElement)).toBeTruthy();
+    });
+  });
+
+  it('should be able to change Avatar', async () => {
+    const data = {};
+    const apiResponse = {
+      updateUser: () => ({
+        avatar: 'file.png',
+      }),
+    };
+
+    apiMock
+      .onPatch('/users/avatar', {
+        data,
+      })
+      .reply(200, { apiResponse });
+
+    const { getByTestId } = render(<Profile />);
+    const avatarInput = getByTestId('avatarInput');
+
+    fireEvent.change(avatarInput, {
+      target: { files: 'avatar-file' },
+    });
+
+    await wait(() => {
+      expect(mockedUpdateUser).toHaveBeenCalledWith(apiResponse);
+      expect(mockedAddToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'success',
+        }),
+      );
     });
   });
 });
